@@ -51,6 +51,7 @@ Debian based системы (Ubuntu, ElementaryOS, Ubuntu, Kali Linux)
 1. Не найдены пакеты в apt:
  
 Смените или обновите зеркало
+
 2. Не найдены пакеты в pacman
 
 Попробуйте AUR
