@@ -4,9 +4,6 @@ ______________________
 Разработана под Linux (EndeavourOS)
 
 # Установка
-
-В релизах можно скачать универсальный исполняемый файл для Linux, однако если вас что то не устраивает, то следуйте инструкции ниже.
-
 Клонируем репозиторий:
 ```
 git clone https://github.com/Dobkeshan/CASCAD-NetworkTools.git
@@ -29,6 +26,8 @@ sudo pacman -S curl
 sudo apt update
 sudo apt upgrade
 sudo apt install build-essential qt6-base-dev curl libcurl4-openssl-dev
+sudo apt install clang
+sudo apt install cmake
 sudo apt intall qtcreator (опционально)
 ```
 Далее, в Qt Creator или в любой другой программе нажимаете на кнопку запуска main.cpp.
@@ -46,6 +45,26 @@ https://github.com/user-attachments/assets/9281fbb7-cf99-46b2-a08d-a886ea0c7559
 # Поддерживаемые системы
 Arch based системы (EndeavourOS, Manjaro Linux и. т. д.)
 Debian based системы (Ubuntu, ElementaryOS, Ubuntu, Kali Linux)
+
+# Возможные ошибки и их решения
+
+1. Не найдены пакеты в apt:
+Смените или обновите зеркало
+2. Не найдены пакеты в pacman
+Попробуйте AUR
+3. Предупреждения при сборке
+Игнорируйте их
+4. Сборка не удалась, программа вылетает, не работает что-то
+Открываете Issue в этом репозитории и пишете о своей проблеме, наша команда ответит максимум через два дня
+5. Не работает на Windows
+Ставь Линукс
+6. Не работает на Fedora
+Ставь Endeavour или Arch
+7. Skill issue
+Тут только бог поможет
+
+
+
 
 
 
