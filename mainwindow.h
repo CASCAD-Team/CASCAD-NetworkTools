@@ -21,23 +21,25 @@ public:
 
 private slots:
     // TCP
-    void on_pushButton_5_clicked();
+    void on_pushButton_sendTcp_clicked();
+    void on_pushButton_scanTcp_clicked();
     void on_tcpSocket_readyRead();
     void on_tcpSocket_errorOccurred(QAbstractSocket::SocketError);
 
     // UDP
-    void on_pushButton_4_clicked();
+    void on_pushButton_sendUdp_clicked();
+    void on_pushButton_scanUdp_clicked();
     void on_udpSocket_readyRead();
 
     // FTP
     void on_pushButton_clicked();   // Подключиться
     void on_pushButton_3_clicked(); // Отключиться
     void on_pushButton_2_clicked(); // Скачать
-
     void on_treeView_doubleClicked(const QModelIndex &index);
 
 private:
     void loadFtpDirectory(const QString &path);
+    QList<int> parsePortRange(const QString &range);
 
     Ui::MainWindow *ui;
     QTcpSocket *tcpSocket;
