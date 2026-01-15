@@ -55,6 +55,7 @@ Debian based системы (Ubuntu, ElementaryOS, Ubuntu, Kali Linux)
 2. Не найдены пакеты в pacman
 
 Попробуйте AUR
+
 4. Предупреждения при сборке
 
 Игнорируйте их
