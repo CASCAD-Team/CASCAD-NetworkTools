@@ -14,8 +14,8 @@
 #include <QLabel>
 #include <QFileDialog>
 #include <QFile>
+#include <QDateTime>
 #include <QProcess>
-#include <QSize>
 #include <cstdio>
 
 // libcurl
@@ -23,7 +23,6 @@ extern "C" {
 #include <curl/curl.h>
 }
 
-// Callback для записи данных из FTP в std::string
 static size_t WriteCallback(void *contents, size_t size, size_t nmemb, std::string *userp) {
     userp->append(static_cast<char*>(contents), size * nmemb);
     return size * nmemb;
@@ -36,10 +35,9 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    this->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-    this->setMinimumSize(this->size());
-    this->setMaximumSize(this->size());
-    this->setFixedSize(QSize(795, 549));
+    // Фиксированный размер окна
+    this->setFixedSize(this->size());
+
     tcpSocket = new QTcpSocket(this);
     udpSocket = new QUdpSocket(this);
     networkManager = new QNetworkAccessManager(this);
@@ -47,6 +45,7 @@ MainWindow::MainWindow(QWidget *parent)
     ftpModel = new QStandardItemModel(this);
     ui->treeView->setModel(ftpModel);
     ftpModel->setHorizontalHeaderLabels({"Подключитесь к FTP-серверу"});
+    ui->treeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     connect(tcpSocket, &QTcpSocket::readyRead, this, &MainWindow::on_tcpSocket_readyRead);
     connect(tcpSocket, &QTcpSocket::errorOccurred, this, &MainWindow::on_tcpSocket_errorOccurred);
@@ -59,63 +58,96 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-// ===== TCP =====
-void MainWindow::on_pushButton_5_clicked()
+// ===== TCP: отправить запрос =====
+void MainWindow::on_pushButton_sendTcp_clicked()
 {
-    QString input = ui->lineEdit_3->text().trimmed();
-    if (input.isEmpty()) {
-        QMessageBox::warning(this, "Ошибка", "Введите адрес сервера");
+    QString host = ui->lineEdit_tcpHost->text().trimmed();
+    if (host.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Введите хост");
         return;
     }
-
-    QString host = input;
     int port = 80;
-    if (input.contains(':')) {
-        QStringList parts = input.split(':');
-        host = parts[0];
-        bool ok;
-        int p = parts[1].toInt(&ok);
-        if (ok && p > 0 && p < 65536) port = p;
-    }
-
-    ui->listWidget_2->clear();
-    ui->listWidget_2->addItem(QString("Подключение к %1:%2...").arg(host).arg(port));
+    ui->listWidget_tcp->clear();
+    ui->listWidget_tcp->addItem(QString("Подключение к %1:%2...").arg(host).arg(port));
     tcpSocket->connectToHost(host, port);
 }
 
 void MainWindow::on_tcpSocket_readyRead()
 {
     QByteArray data = tcpSocket->readAll();
-    ui->listWidget_2->addItem("Ответ: " + QString::fromUtf8(data));
+    ui->listWidget_tcp->addItem("Ответ: " + QString::fromUtf8(data));
 }
 
 void MainWindow::on_tcpSocket_errorOccurred(QAbstractSocket::SocketError)
 {
-    ui->listWidget_2->addItem("TCP ошибка: " + tcpSocket->errorString());
+    ui->listWidget_tcp->addItem("TCP ошибка: " + tcpSocket->errorString());
 }
 
-// ===== UDP =====
-void MainWindow::on_pushButton_4_clicked()
+// ===== TCP: сканирование портов =====
+QList<int> MainWindow::parsePortRange(const QString &range)
 {
-    QString input = ui->lineEdit_2->text().trimmed();
-    if (input.isEmpty()) {
-        QMessageBox::warning(this, "Ошибка", "Введите адрес сервера");
+    QList<int> ports;
+    QStringList parts = range.split(',', Qt::SkipEmptyParts);
+    for (const QString &part : parts) {
+        if (part.contains('-')) {
+            QStringList bounds = part.split('-');
+            if (bounds.size() == 2) {
+                bool ok1, ok2;
+                int start = bounds[0].toInt(&ok1);
+                int end = bounds[1].toInt(&ok2);
+                if (ok1 && ok2 && start > 0 && end <= 65535 && start <= end) {
+                    for (int p = start; p <= end; ++p)
+                        ports << p;
+                }
+            }
+        } else {
+            bool ok;
+            int port = part.toInt(&ok);
+            if (ok && port > 0 && port <= 65535)
+                ports << port;
+        }
+    }
+    return ports;
+}
+
+void MainWindow::on_pushButton_scanTcp_clicked()
+{
+    QString host = ui->lineEdit_tcpHost->text().trimmed();
+    QString portRange = ui->lineEdit_tcpPorts->text().trimmed();
+    if (host.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Введите хост");
         return;
     }
+    if (portRange.isEmpty()) portRange = "1-1000";
 
-    QString host = input;
-    int port = 80;
-    if (input.contains(':')) {
-        QStringList parts = input.split(':');
-        host = parts[0];
-        bool ok;
-        int p = parts[1].toInt(&ok);
-        if (ok && p > 0 && p < 65536) port = p;
+    ui->listWidget_tcp->clear();
+    ui->listWidget_tcp->addItem(QString("Сканирование TCP портов на %1...").arg(host));
+
+    QList<int> ports = parsePortRange(portRange);
+    for (int port : ports) {
+        QTcpSocket socket;
+        socket.connectToHost(host, port);
+        if (socket.waitForConnected(800)) {
+            ui->listWidget_tcp->addItem(QString("✅ Открыт: %1/tcp").arg(port));
+            socket.disconnectFromHost();
+        }
+        QApplication::processEvents();
     }
+    ui->listWidget_tcp->addItem("Сканирование завершено.");
+}
 
-    QByteArray message = "Hello from UDP client";
-    udpSocket->writeDatagram(message, QHostAddress(host), port);
-    ui->listWidget->addItem(QString("Отправлено на %1:%2").arg(host).arg(port));
+// ===== UDP: отправить датаграмму =====
+void MainWindow::on_pushButton_sendUdp_clicked()
+{
+    QString host = ui->lineEdit_udpHost->text().trimmed();
+    if (host.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Введите хост");
+        return;
+    }
+    int port = 80;
+    QByteArray msg = "Hello from UDP client";
+    udpSocket->writeDatagram(msg, QHostAddress(host), port);
+    ui->listWidget_udp->addItem(QString("📤 Отправлено на %1:%2").arg(host).arg(port));
 }
 
 void MainWindow::on_udpSocket_readyRead()
@@ -126,11 +158,45 @@ void MainWindow::on_udpSocket_readyRead()
         QHostAddress sender;
         quint16 senderPort;
         udpSocket->readDatagram(datagram.data(), datagram.size(), &sender, &senderPort);
-        ui->listWidget->addItem(QString("От %1:%2 → %3")
-                                    .arg(sender.toString())
-                                    .arg(senderPort)
-                                    .arg(QString::fromUtf8(datagram)));
+        ui->listWidget_udp->addItem(QString("📥 От %1:%2 → %3")
+                                        .arg(sender.toString())
+                                        .arg(senderPort)
+                                        .arg(QString::fromUtf8(datagram)));
     }
+}
+
+// ===== UDP: сканирование портов =====
+void MainWindow::on_pushButton_scanUdp_clicked()
+{
+    QString host = ui->lineEdit_udpHost->text().trimmed();
+    QString portRange = ui->lineEdit_udpPorts->text().trimmed();
+    if (host.isEmpty()) {
+        QMessageBox::warning(this, "Ошибка", "Введите хост");
+        return;
+    }
+    if (portRange.isEmpty()) portRange = "53,67,68,123,161";
+
+    ui->listWidget_udp->clear();
+    ui->listWidget_udp->addItem(QString("Сканирование UDP портов на %1...").arg(host));
+    ui->listWidget_udp->addItem("⚠️ UDP-скан может быть неточным!");
+
+    QList<int> ports = parsePortRange(portRange);
+    QUdpSocket socket;
+    QHostAddress addr(host);
+
+    for (int port : ports) {
+        socket.writeDatagram("", addr, port);
+        if (socket.waitForReadyRead(500)) {
+            while (socket.hasPendingDatagrams()) {
+                QByteArray datagram;
+                datagram.resize(static_cast<int>(socket.pendingDatagramSize()));
+                socket.readDatagram(datagram.data(), datagram.size());
+                ui->listWidget_udp->addItem(QString("📥 Ответ на %1/udp").arg(port));
+            }
+        }
+        QApplication::processEvents();
+    }
+    ui->listWidget_udp->addItem("Сканирование завершено.");
 }
 
 // ===== FTP: подключение =====
@@ -151,7 +217,6 @@ void MainWindow::on_pushButton_clicked()
     currentFtpHost = url.host();
     currentFtpPath = "/";
 
-    // Диалог аутентификации
     QDialog authDialog(this);
     authDialog.setWindowTitle("Аутентификация FTP");
     QVBoxLayout mainLayout(&authDialog);
@@ -187,7 +252,6 @@ void MainWindow::on_pushButton_clicked()
     loadFtpDirectory(currentFtpPath);
 }
 
-// ===== FTP: загрузка директории =====
 void MainWindow::loadFtpDirectory(const QString &path)
 {
     QString fullUrl = QString("ftp://%1%2").arg(currentFtpHost).arg(path);
@@ -241,7 +305,6 @@ void MainWindow::loadFtpDirectory(const QString &path)
                         item->setIcon(style()->standardIcon(QStyle::SP_FileIcon));
                         item->setData("file", Qt::UserRole);
                     }
-                    // Имя файла — последнее непустое слово
                     QStringList parts = s.split(' ', Qt::SkipEmptyParts);
                     if (!parts.isEmpty()) {
                         QString filename = parts.last();
@@ -259,7 +322,6 @@ void MainWindow::loadFtpDirectory(const QString &path)
     }
 }
 
-// ===== FTP: двойной клик по элементу =====
 void MainWindow::on_treeView_doubleClicked(const QModelIndex &index)
 {
     if (!index.isValid()) return;
@@ -278,7 +340,6 @@ void MainWindow::on_treeView_doubleClicked(const QModelIndex &index)
     }
 }
 
-// ===== FTP: скачать выбранный файл =====
 void MainWindow::on_pushButton_2_clicked()
 {
     QModelIndexList selected = ui->treeView->selectionModel()->selectedRows();
@@ -295,7 +356,6 @@ void MainWindow::on_pushButton_2_clicked()
     QString itemName = item->data(Qt::UserRole + 1).toString();
 
     if (type == "file") {
-        // === Скачивание файла (как раньше) ===
         QString savePath = QFileDialog::getSaveFileName(this, "Сохранить файл как", itemName);
         if (savePath.isEmpty()) return;
 
@@ -340,26 +400,22 @@ void MainWindow::on_pushButton_2_clicked()
         }
 
     } else if (type == "dir") {
-        // === Скачивание папки как ZIP ===
         QString folderName = itemName;
         QString zipName = folderName + ".zip";
         QString savePath = QFileDialog::getSaveFileName(this, "Сохранить папку как ZIP", zipName, "ZIP архивы (*.zip)");
         if (savePath.isEmpty()) return;
 
-        // Создаём временную директорию
         QDir tempDir(QDir::temp().filePath("ftp_download_" + QString::number(QDateTime::currentMSecsSinceEpoch())));
         if (!tempDir.mkpath(".")) {
             QMessageBox::critical(this, "Ошибка", "Не удалось создать временную папку");
             return;
         }
 
-        // Формируем URL папки
         QString folderUrl = QString("ftp://%1%2%3/")
                                 .arg(currentFtpHost)
                                 .arg(currentFtpPath.endsWith('/') ? currentFtpPath : currentFtpPath + "/")
                                 .arg(folderName);
 
-        // Скачиваем содержимое папки (просто текстовый список)
         CURL *curl = curl_easy_init();
         std::string response;
         if (curl) {
@@ -372,7 +428,6 @@ void MainWindow::on_pushButton_2_clicked()
             }
             curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
             curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-            curl_easy_setopt(curl, CURLOPT_TIMEOUT, 30L);
             curl_easy_perform(curl);
             curl_easy_cleanup(curl);
         }
@@ -380,10 +435,9 @@ void MainWindow::on_pushButton_2_clicked()
         QStringList lines = QString::fromStdString(response).split('\n');
         bool hasFiles = false;
 
-        // Скачиваем каждый файл в папку
         for (const QString &line : qAsConst(lines)) {
             QString s = line.trimmed();
-            if (s.isEmpty() || s[0] != '-') continue; // только файлы
+            if (s.isEmpty() || s[0] != '-') continue;
 
             QStringList parts = s.split(' ', Qt::SkipEmptyParts);
             if (parts.isEmpty()) continue;
@@ -420,7 +474,6 @@ void MainWindow::on_pushButton_2_clicked()
             return;
         }
 
-        // Запускаем `zip -r archive.zip .` внутри временной папки
         QProcess zipProc;
         zipProc.setWorkingDirectory(tempDir.path());
         zipProc.start("zip", QStringList() << "-r" << QDir::toNativeSeparators(QFileInfo(savePath).absoluteFilePath()) << ".");
@@ -428,18 +481,15 @@ void MainWindow::on_pushButton_2_clicked()
 
         if (zipProc.exitCode() != 0) {
             QMessageBox::critical(this, "Ошибка ZIP",
-                                  "Не удалось создать архив. Убедитесь, что установлен пакет 'zip'.\n\n" +
-                                      QString::fromLocal8Bit(zipProc.readAllStandardError()));
+                                  "Не удалось создать архив. Установите 'zip': sudo pacman -S zip");
         } else {
             QMessageBox::information(this, "Успех", "Папка сохранена как ZIP-архив!");
         }
 
-        // Удаляем временные файлы
         tempDir.removeRecursively();
     }
 }
 
-// ===== FTP: отключиться =====
 void MainWindow::on_pushButton_3_clicked()
 {
     currentFtpHost.clear();
