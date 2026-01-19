@@ -33,7 +33,7 @@
      </rect>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <widget class="QWidget" name="tcp">
      <attribute name="title">
@@ -44,30 +44,69 @@
        <rect>
         <x>10</x>
         <y>30</y>
-        <width>201</width>
+        <width>60</width>
         <height>20</height>
        </rect>
       </property>
       <property name="text">
-       <string>Введите адрес TCP-сервера:</string>
+       <string>Хост:</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="lineEdit_3">
+     <widget class="QLineEdit" name="lineEdit_tcpHost">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>80</x>
         <y>30</y>
-        <width>471</width>
+        <width>300</width>
         <height>20</height>
        </rect>
       </property>
      </widget>
-     <widget class="QPushButton" name="pushButton_5">
+     <widget class="QLabel" name="label_5">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>10</x>
         <y>60</y>
-        <width>471</width>
+        <width>60</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Порты:</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEdit_tcpPorts">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>60</y>
+        <width>300</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="placeholderText">
+       <string>&quot;22,80,443 или 1-1000&quot;</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_scanTcp">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>90</y>
+        <width>150</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Сканировать</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_sendTcp">
+      <property name="geometry">
+       <rect>
+        <x>250</x>
+        <y>90</y>
+        <width>130</width>
         <height>26</height>
        </rect>
       </property>
@@ -75,27 +114,27 @@
        <string>Отправить запрос</string>
       </property>
      </widget>
-     <widget class="QListWidget" name="listWidget_2">
+     <widget class="QLabel" name="label_6">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>10</x>
         <y>120</y>
-        <width>471</width>
-        <height>301</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_5">
-      <property name="geometry">
-       <rect>
-        <x>200</x>
-        <y>90</y>
-        <width>111</width>
+        <width>100</width>
         <height>20</height>
        </rect>
       </property>
       <property name="text">
        <string>Результат:</string>
+      </property>
+     </widget>
+     <widget class="QListWidget" name="listWidget_tcp">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>150</y>
+        <width>770</width>
+        <height>321</height>
+       </rect>
       </property>
      </widget>
     </widget>
@@ -108,30 +147,69 @@
        <rect>
         <x>10</x>
         <y>30</y>
-        <width>221</width>
-        <height>18</height>
+        <width>60</width>
+        <height>20</height>
        </rect>
       </property>
       <property name="text">
-       <string>Введите адрес UDP сервера:</string>
+       <string>Хост:</string>
       </property>
      </widget>
-     <widget class="QLineEdit" name="lineEdit_2">
+     <widget class="QLineEdit" name="lineEdit_udpHost">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>80</x>
         <y>30</y>
-        <width>471</width>
+        <width>300</width>
         <height>20</height>
        </rect>
       </property>
      </widget>
-     <widget class="QPushButton" name="pushButton_4">
+     <widget class="QLabel" name="label_3">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>10</x>
         <y>60</y>
-        <width>471</width>
+        <width>60</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Порты:</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="lineEdit_udpPorts">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>60</y>
+        <width>300</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="placeholderText">
+       <string>&quot;53,123 или 1-100&quot;</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_scanUdp">
+      <property name="geometry">
+       <rect>
+        <x>80</x>
+        <y>90</y>
+        <width>150</width>
+        <height>26</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Сканировать</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="pushButton_sendUdp">
+      <property name="geometry">
+       <rect>
+        <x>250</x>
+        <y>90</y>
+        <width>130</width>
         <height>26</height>
        </rect>
       </property>
@@ -139,27 +217,27 @@
        <string>Отправить запрос</string>
       </property>
      </widget>
-     <widget class="QListWidget" name="listWidget">
+     <widget class="QLabel" name="label_7">
       <property name="geometry">
        <rect>
-        <x>200</x>
+        <x>10</x>
         <y>120</y>
-        <width>471</width>
-        <height>301</height>
-       </rect>
-      </property>
-     </widget>
-     <widget class="QLabel" name="label_3">
-      <property name="geometry">
-       <rect>
-        <x>200</x>
-        <y>90</y>
-        <width>131</width>
+        <width>100</width>
         <height>20</height>
        </rect>
       </property>
       <property name="text">
        <string>Результат:</string>
+      </property>
+     </widget>
+     <widget class="QListWidget" name="listWidget_udp">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>150</y>
+        <width>771</width>
+        <height>331</height>
+       </rect>
       </property>
      </widget>
     </widget>
